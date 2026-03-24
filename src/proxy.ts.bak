@@ -56,7 +56,7 @@ export class MCPProxy {
     // Handle tool listing
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       // Get tools from target server
-      if (this.targetTools.length === 0 && this.targetCommand) {
+      if (this.targetTools.length === 0) {
         try {
           const result = await this.targetTransport.sendRequest('tools/list');
           this.targetTools = result.tools || [];
@@ -444,34 +444,21 @@ export class MCPProxy {
   }
 
   async start(): Promise<void> {
-    // Start target server if command is provided
-    if (this.targetCommand) {
-      try {
-        await this.targetTransport.start();
+    // Start target server
+    await this.targetTransport.start();
 
-        // Initialize target server
-        const initResult = await this.targetTransport.sendRequest('initialize', {
-          protocolVersion: '2024-11-05',
-          capabilities: {},
-          clientInfo: {
-            name: 'mcp-cache',
-            version: '0.1.0',
-          },
-        });
+    // Initialize target server
+    const initResult = await this.targetTransport.sendRequest('initialize', {
+      protocolVersion: '2024-11-05',
+      capabilities: {},
+      clientInfo: {
+        name: 'mcp-cache',
+        version: '0.1.0',
+      },
+    });
 
-        // Send initialized notification
-        await this.targetTransport.sendNotification('notifications/initialized');
-
-        console.error('mcp-cache: Proxy started and connected to target server');
-        console.error(`Target server: ${initResult.serverInfo?.name} v${initResult.serverInfo?.version}`);
-      } catch (error) {
-        console.error('mcp-cache: Failed to connect to target server, running without target');
-        console.error('mcp-cache: Only management tools will be available');
-      }
-    } else {
-      console.error('mcp-cache: Starting without target server');
-      console.error('mcp-cache: Only management tools will be available');
-    }
+    // Send initialized notification
+    await this.targetTransport.sendNotification('notifications/initialized');
 
     // Connect our server to stdio
     const transport = new StdioServerTransport();
@@ -511,6 +498,8 @@ export class MCPProxy {
     const config = this.configManager.getConfig();
     this.cacheManager = new CacheManager(config.cacheDir, config.ttl);
 
+    console.error('mcp-cache: Proxy started and connected to target server');
+    console.error(`Target server: ${initResult.serverInfo?.name} v${initResult.serverInfo?.version}`);
     console.error(`Client: ${this.clientInfo.name} (Token limit: ${this.configManager.getMaxTokens()})`);
   }
 }

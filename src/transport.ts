@@ -20,6 +20,12 @@ export class TargetServerTransport {
   ) {}
 
   async start(): Promise<void> {
+  // If no command is provided, just resolve without starting a process
+    if (!this.command) {
+      console.error('TargetServerTransport: No command provided, skipping target server startup');
+      return Promise.resolve();
+    }
+
     return new Promise((resolve, reject) => {
       this.process = spawn(this.command, this.args, {
         stdio: ['pipe', 'pipe', 'pipe'],
